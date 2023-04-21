@@ -1,56 +1,65 @@
-```javascript
-// Load the QB-Core module
-const qbcore = exports.qb-core;
+-- Load the QB-Core module
+local qbcore = exports["qb-core"]
 
-// Function to play a specific engine sound for a vehicle
-function playEngineSound(vehicle, soundName) {
-  // Use the '_FORCE_VEHICLE_ENGINE_AUDIO' native provided by cfx docs
-  const [_, isSuccessful] = Citizen.invokeNative('0x1F1F957154EC51DF', vehicle, soundName);
-  return isSuccessful;
+-- Define the available engine sounds
+local engineSounds = {
+  ["ENGINE_LOWRIDER"] = true,
+  ["ENGINE_GENERIC"] = true,
+  ["ENGINE_SUPERCAR"] = true,
+  ["ENGINE_SPORT"] = true,
 }
 
-// Function to create a progress bar in the player's screen
-function createProgressBar(message, time) {
-  SendNUIMessage({
-    type: 'progressBar',
-    message,
-    time,
-  });
-}
+-- Function to play a specific engine sound for a vehicle
+function playEngineSound(vehicle, soundName)
+  -- Use the '_FORCE_VEHICLE_ENGINE_AUDIO' native provided by cfx docs
+  local isSuccessful = Citizen.invokeNative("0x1F1F957154EC51DF", vehicle, soundName)
+  return isSuccessful
+end
 
-// Function to handle the keybind event
-function handleEngineSoundChange() {
-  const vehicle = GetVehiclePedIsIn(GetPlayerPed(-1), false);
+-- Function to handle the change sound request
+local changeSoundFunction = Instance.new("RemoteFunction")
+changeSoundFunction.Name = "ChangeSound"
+changeSoundFunction.OnServerInvoke = function(player, soundName)
+  if engineSounds[soundName] then
+    local vehicle = player.Character and player.Character:FindFirstChildOfClass("Vehicle")
+    if vehicle then
+      -- Play the engine sound that was set by the user
+      local isSuccessful = playEngineSound(vehicle, soundName)
+      if isSuccessful then
+        return true
+      end
+    end
+  end
+  return false
+end
+changeSoundFunction.Parent = game:GetService("ReplicatedStorage")
 
-  if (vehicle) {
-    // Play the engine sound that was set by the user
-    const isSuccessful = playEngineSound(vehicle, currentEngineSound);
-    if (isSuccessful) {
-      createProgressBar('Changing engine sound', 2500);
-    }
-  }
-}
+-- Function to handle the keybind event
+function handleEngineSoundChange()
+  -- Get the player who triggered the event
+  local player = source
 
-// Set the default engine sound to 'ENGINE_LOWRIDER'
-let currentEngineSound = 'ENGINE_LOWRIDER';
+  local vehicle = player.Character and player.Character:FindFirstChildOfClass("Vehicle")
+  if vehicle then
+    -- Show the menu to choose the new engine sound
+    qbcore:OpenMenu("default", function(data)
+      local soundName = data.current.value
+      -- Send the request to the server to change the engine sound
+      local isSuccessful = changeSoundFunction:InvokeClient(player, soundName)
+      if isSuccessful then
+        createProgressBar(player, "Changing engine sound", 2500)
+      end
+    end, { header = "Change Engine Sound", align = "bottom-right", elements = {
+      { label = "Engine Lowrider", value = "ENGINE_LOWRIDER" },
+      { label = "Engine Generic", value = "ENGINE_GENERIC" },
+      { label = "Engine Supercar", value = "ENGINE_SUPERCAR" },
+      { label = "Engine Sport", value = "ENGINE_SPORT" },
+    }})
+  end
+end
 
-// Register the 'k' keybind to change the engine sound
-RegisterKeyMapping('k', 'Change Engine Sound', 'keyboard', 'k');
-RegisterCommand('changesound', () => {
-  // Create a menu to choose the new engine sound
-  const menu = new Menu('Change Engine Sound', {
-    'ENGINE_LOWRIDER': () => currentEngineSound = 'ENGINE_LOWRIDER',
-    'ENGINE_GENERIC': () => currentEngineSound = 'ENGINE_GENERIC',
-    'ENGINE_SUPERCAR': () => currentEngineSound = 'ENGINE_SUPERCAR',
-    'ENGINE_SPORT': () => currentEngineSound = 'ENGINE_SPORT',
-  });
-  // Show the menu in the player's screen
-  menu.show();
-}, false);
-
-// Register the keybind event handler
-on('keydown', (keyCode) => {
-  if (keyCode === 'k'.charCodeAt(0)) {
-    handleEngineSoundChange();
-  }
-});
+-- Register the 'k' keybind to change the engine sound
+RegisterKeyMapping("k", "Change Engine Sound", "keyboard", "k")
+RegisterCommand("changesound", function()
+  handleEngineSoundChange()
+end, false
