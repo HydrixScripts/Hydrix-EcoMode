@@ -34,7 +34,7 @@ AddEventHandler("qb-enginesound:playEngineSound", function(soundName)
   -- Use the '_FORCE_VEHICLE_ENGINE_AUDIO' native provided by cfx docs
   local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
   if DoesEntityExist(vehicle) then
-    Citizen.InvokeNative("0x1F1F957154EC51DF", vehicle, soundName)
+    Citizen.InvokeNative("0x1F1F957154EC51DF", vehicle, soundName)  -- Invokes _FORCE_VEH_ENGINE_AUDIO
   end
 end)
 
