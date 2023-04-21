@@ -37,7 +37,7 @@ changeSoundFunction.Parent = game:GetService("ReplicatedStorage")
 -- Function to handle the keybind event
 function handleEngineSoundChange(source, args, rawCommand)
   -- Get the player who triggered the event
-  local player = source
+  local player = source  --maybe want to use playerpedID() maybe also make an is ped function.
 
   local vehicle = player.Character and player.Character:FindFirstChildOfClass("Vehicle")
   if vehicle then
